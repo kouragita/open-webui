@@ -672,16 +672,10 @@
 			}
 		}
 
-		console.log('content', content);
-
 		if (collaboration && documentId && socket && user) {
 			const { SocketIOCollaborationProvider } = await import('./RichTextInput/Collaboration');
 			provider = new SocketIOCollaborationProvider(documentId, socket, user, content);
 		}
-
-		console.log(bubbleMenuElement, floatingMenuElement);
-		console.log(suggestions);
-
 		editor = new Editor({
 			element: element,
 			extensions: [
@@ -789,11 +783,19 @@
 					)
 					.replace(/\u00a0/g, ' ');
 
-				onChange({
-					html: htmlValue,
-					json: jsonValue,
-					md: mdValue
-				});
+				if (richText) {
+					onChange({
+						html: htmlValue,
+						json: jsonValue,
+						md: mdValue
+					});
+				} else {
+					// Plain text path: preserve \t and \n exactly
+					const doc = editor.view.state.doc;
+					const plain = doc.textBetween(0, doc.content.size, '\n\n', '\n'); // keeps \t intact
+					value = plain;
+					onChange({ html: null, json: null, md: plain });
+				}
 
 				if (json) {
 					value = jsonValue;
@@ -1030,6 +1032,24 @@
 						// For all other cases, let ProseMirror perform its default paste behavior.
 						view.dispatch(view.state.tr.scrollIntoView());
 						return false;
+					},
+					copy: (view, event: ClipboardEvent) => {
+						if (!event.clipboardData) return false;
+						if (richText) return false; // Let ProseMirror handle normal copy in rich text mode
+
+						const { state } = view;
+						const { from, to } = state.selection;
+
+						// Only take the selected text & HTML, not the full doc
+						const plain = state.doc.textBetween(from, to, '\n');
+						const slice = state.doc.cut(from, to);
+						const html = editor.schema ? editor.getHTML(slice) : editor.getHTML(); // depending on your editor API
+
+						event.clipboardData.setData('text/plain', plain);
+						event.clipboardData.setData('text/html', html);
+
+						event.preventDefault();
+						return true;
 					}
 				}
 			},

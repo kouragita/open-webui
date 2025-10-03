@@ -198,13 +198,25 @@ def get_parsed_and_base_url(server_url) -> tuple[urllib.parse.ParseResult, str]:
 
 
 def get_discovery_urls(server_url) -> list[str]:
-    urls = []
     parsed, base_url = get_parsed_and_base_url(server_url)
 
-    urls.append(
-        urllib.parse.urljoin(base_url, "/.well-known/oauth-authorization-server")
-    )
-    urls.append(urllib.parse.urljoin(base_url, "/.well-known/openid-configuration"))
+    urls = [
+        urllib.parse.urljoin(base_url, "/.well-known/oauth-authorization-server"),
+        urllib.parse.urljoin(base_url, "/.well-known/openid-configuration"),
+    ]
+
+    if parsed.path and parsed.path != "/":
+        urls.append(
+            urllib.parse.urljoin(
+                base_url,
+                f"/.well-known/oauth-authorization-server{parsed.path.rstrip('/')}",
+            )
+        )
+        urls.append(
+            urllib.parse.urljoin(
+                base_url, f"/.well-known/openid-configuration{parsed.path.rstrip('/')}"
+            )
+        )
 
     return urls
 
@@ -603,8 +615,14 @@ class OAuthManager:
         self.app = app
 
         self._clients = {}
-        for _, provider_config in OAUTH_PROVIDERS.items():
-            provider_config["register"](self.oauth)
+
+        for name, provider_config in OAUTH_PROVIDERS.items():
+            if "register" not in provider_config:
+                log.error(f"OAuth provider {name} missing register function")
+                continue
+
+            client = provider_config["register"](self.oauth)
+            self._clients[name] = client
 
     def get_client(self, provider_name):
         if provider_name not in self._clients:
