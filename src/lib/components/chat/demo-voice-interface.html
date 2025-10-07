@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tractor Voice Interface Demo</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-dark: #3730a3;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            <div class="text-center text-sm text-gray-500 dark:text-gray-400">--gray-100: #f3f4f6;
+            <div class="text-center text-sm text-gray-500 dark:text-gray-400">--gray-200: #e5e7eb;
+            <div class="text-center text-sm text-gray-500 dark:text-gray-400">--gray-700: #374151;
+            <div class="text-center text-sm text-gray-500 dark:text-gray-400">--gray-800: #1f2937;
+            <div class="text-center text-sm text-gray-500 dark:text-gray-400">--gray-900: #111827;
+            --white: #ffffff;
+            --black: #000000;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--gray-100);
+            color: var(--gray-900);
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .status-panel {
+            background: var(--white);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-dot.active {
+            background-color: var(--secondary);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.inactive {
+            background-color: var(--gray-200);
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-danger {
+            background-color: var(--danger);
+            color: var(--white);
+        }
+
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .visualization {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 100px;
+            gap: 2px;
+            margin: 2rem 0;
+            padding: 1rem;
+            background: var(--gray-200);
+            border-radius: 0.5rem;
+        }
+
+        .bar {
+            width: 4px;
+            background-color: var(--primary);
+            border-radius: 2px 2px 0 0;
+            transition: height 0.1s ease;
+        }
+
+        .transcript {
+            background: var(--white);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .transcript h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .response {
+            background: var(--white);
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .response h3 {
+            margin-top: 0;
+            color: var(--secondary);
+        }
+
+        .timer {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            color: var(--primary);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            color: var(--gray-700);
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚜 Tractor Voice Assistant</h1>
+            <p>Swahili Voice Customer Service for Kenyan Farmers</p>
+        </header>
+
+        <div class="status-panel">
+            <div class="status-indicator">
+                <div class="status-dot inactive" id="status-dot"></div>
+                <span id="status-text">Ready - Say "Hey Tractor" to activate</span>
+            </div>
+            
+            <div class="timer" id="timer">00:00</div>
+            
+            <div class="visualization" id="visualization">
+                <!-- Audio visualization bars will be generated here -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-primary" id="start-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polygon points="10 8 16 12 10 16 10 8"></polygon>
+                </svg>
+                Start Listening
+            </button>
+            
+            <button class="btn btn-danger" id="stop-btn" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="6" y="4" width="4" height="16"></rect>
+                    <rect x="14" y="4" width="4" height="16"></rect>
+                </svg>
+                Stop
+            </button>
+        </div>
+
+        <div class="transcript">
+            <h3>User Transcript</h3>
+            <div id="transcript-text">
+                No speech detected yet. Say "Hey Tractor" followed by your question.
+            </div>
+        </div>
+
+        <div class="response">
+            <h3>AI Response</h3>
+            <div id="response-text">
+                Waiting for your voice input...
+            </div>
+        </div>
+
+        <footer>
+            <p>Tractor Voice Assistant - Supporting farmers in Swahili and English</p>
+        </footer>
+    </div>
+
+    <script>
+        // Global variables
+        let isListening = false;
+        let isRecording = false;
+        let recognition = null;
+        let mediaRecorder = null;
+        let audioStream = null;
+        let audioChunks = [];
+        let timerInterval = null;
+        let seconds = 0;
+
+        // DOM Elements
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const timerEl = document.getElementById('timer');
+        const transcriptEl = document.getElementById('transcript-text');
+        const responseEl = document.getElementById('response-text');
+        const visualizationEl = document.getElementById('visualization');
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize speech recognition if available
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = false;
+                recognition.lang = 'sw-KE'; // Default to Swahili (Kenya)
+                
+                recognition.onresult = handleSpeechResult;
+                recognition.onerror = handleSpeechError;
+                recognition.onend = () => {
+                    if (isListening) {
+                        // Auto-restart if still supposed to be listening
+                        recognition.start();
+                    }
+                };
+            } else {
+                statusText.textContent = 'Speech recognition not supported in this browser';
+                startBtn.disabled = true;
+            }
+
+            // Create visualization bars
+            createVisualizationBars();
+
+            // Event listeners
+            startBtn.addEventListener('click', startListening);
+            stopBtn.addEventListener('click', stopListening);
+        });
+
+        // Create audio visualization bars
+        function createVisualizationBars() {
+            visualizationEl.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = '4px';
+                visualizationEl.appendChild(bar);
+            }
+        }
+
+        // Update visualization with random heights
+        function updateVisualization() {
+            const bars = visualizationEl.querySelectorAll('.bar');
+            bars.forEach(bar => {
+                const height = Math.random() * 80 + 4;
+                bar.style.height = `${height}px`;
+            });
+        }
+
+        // Start listening for voice input
+        function startListening() {
+            if (!recognition) return;
+
+            try {
+                recognition.start();
+                isListening = true;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                statusDot.className = 'status-dot active';
+                statusText.textContent = 'Listening for "Hey Tractor"...';
+                
+                // Start timer
+                seconds = 0;
+                timerEl.textContent = '00:00';
+                timerInterval = setInterval(() => {
+                    seconds++;
+                    const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+                    const secs = (seconds % 60).toString().padStart(2, '0');
+                    timerEl.textContent = `${mins}:${secs}`;
+                }, 1000);
+
+                // Start visualization
+                const vizInterval = setInterval(() => {
+                    if (!isListening) {
+                        clearInterval(vizInterval);
+                        return;
+                    }
+                    updateVisualization();
+                }, 100);
+
+            } catch (error) {
+                console.error('Error starting speech recognition:', error);
+                statusText.textContent = 'Error starting voice recognition';
+            }
+        }
+
+        // Stop listening
+        function stopListening() {
+            if (recognition && isListening) {
+                recognition.stop();
+            }
+            
+            isListening = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            statusDot.className = 'status-dot inactive';
+            statusText.textContent = 'Stopped - Click Start to begin';
+            
+            // Stop timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        // Handle speech recognition results
+        function handleSpeechResult(event) {
+            const transcript = event.results[event.results.length - 1][0].transcript.trim();
+            
+            if (transcript.toLowerCase().includes('hey tractor')) {
+                // Wake word detected
+                statusText.textContent = 'Wake word detected! Processing your request...';
+                
+                // Simulate processing delay
+                setTimeout(() => {
+                    // Display the transcript (remove wake word)
+                    const cleanTranscript = transcript.replace(/hey tractor/i, '').trim();
+                    transcriptEl.innerHTML = `<strong>You said:</strong> "${cleanTranscript}"`;
+                    
+                    // Simulate AI response
+                    generateAIResponse(cleanTranscript);
+                }, 1000);
+                
+                // Stop listening after wake word detection
+                stopListening();
+            }
+        }
+
+        // Handle speech recognition errors
+        function handleSpeechError(event) {
+            console.error('Speech recognition error:', event.error);
+            statusText.textContent = `Speech recognition error: ${event.error}`;
+            stopListening();
+        }
+
+        // Generate simulated AI response
+        function generateAIResponse(userInput) {
+            responseEl.innerHTML = '<em>Processing your request...</em>';
+            
+            // Simulate API call delay
+            setTimeout(() => {
+                let response = "";
+                
+                // Simple response logic based on keywords
+                if (userInput.toLowerCase().includes('account') || userInput.toLowerCase().includes('akaunti')) {
+                    response = "Ninaelewa una tatizo na kuingia kwenye akaunti yako. Jaribu kuangalia muunganisho wako wa mtandao, kisha ufungue programu tena na ujaribu tena. Ikiwa bado una tatizo, tuma barua pepe kwetu kwa msaada zaidi.";
+                } else if (userInput.toLowerCase().includes('password') || userInput.toLowerCase().includes('nywila')) {
+                    response = "Unaweza kuweka upya nenosiri lako kwa kwenda kwenye ukurasa wa kuingia, kisha ubofye kitufe cha 'Sahau Nenosiri'. Tutakutumia barua pepe yenye maagizo ya kuseti nenosiri jipya.";
+                } else if (userInput.toLowerCase().includes('malipo') || userInput.toLowerCase().includes('payment')) {
+                    response = "Huduma zetu za malipo zinapatikana kwa njia ya M-Pesa au pesa taslimu. Tafadhali hakikisha una salio la kutosha na jaribu tena. Ikiwa unatatizo zaidi, wasiliana na timu yetu ya msaada.";
+                } else if (userInput.toLowerCase().includes('mifugo') || userInput.toLowerCase().includes('livestock')) {
+                    response = "Sisi tunaongoza wakulima wa mifugo kupitia mfumo wetu wa simu. Unaweza kupata habari zote kuhusu usimamizi wa mifugo, uchunguzi, na ushauri kwa wataalamu wetu.";
+                } else {
+                    response = "Asante kwa swali lako. Timu yetu itawajibu haraka iwezekanavyo. Kwa sasa, nawasiliana na mmoja wa wataalamu wetu ili apewe taarifa zaidi kuhusu suala lako.";
+                }
+                
+                responseEl.innerHTML = `<strong>Jibu:</strong> "${response}"`;
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
